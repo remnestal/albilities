@@ -90,6 +90,10 @@ Sort every hunk before staging anything:
   and goes in the same commit.
 - **Sidetracks.** Everything else the gate asks about. A cleanup the change
   doesn't cause gets its own commit at most.
+- **Scar tissue.** Code the change makes dead or wrong that is still in the
+  tree: a helper with no callers left, a comment on the old behaviour, a flag
+  nothing reads. Grep for it. Each is a gate item: Remove in this commit
+  (Recommended) or Skip (leave it).
 
 Report debris from the changeset check as gate items. Never commit a stray
 print or a skipped test without the user's say-so.
