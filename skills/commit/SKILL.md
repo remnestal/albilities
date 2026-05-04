@@ -61,8 +61,9 @@ Put each item through the decision gate above, hunk under **Where**. The
   Recommend it for untracked non-code files, such as notes.
 - **Skip.** A hunk in the tree is reversed; an untracked file is deleted.
 
-**The gate records; later steps act:** removals in step 5. An answer settles the item for the session. Never ask
-about it again, even if the diff grows.
+**The gate records; later steps act:** removals in step 5. An answer
+settles the item for the session. Never ask about it again, even if the diff
+grows.
 
 ## 1. Read the changeset
 
