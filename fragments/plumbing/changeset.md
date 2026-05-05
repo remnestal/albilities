@@ -53,3 +53,30 @@ Flag leftovers the author did not mean to ship:
 - hardcoded local endpoints, ports or credentials (`localhost`, `127.0.0.1`);
 - commented-out code blocks;
 - temporary files, such as scratch scripts or `.orig` and `.rej` files.
+
+## Format-only hunks
+
+A format-only hunk changes layout and no behaviour. Formatters run across a
+whole repo leave these in files the change never touched. Once applied, they
+no longer show in `gofumpt -l`.
+
+- **Detect repo-wide.** `gofumpt -l .` lists Go files still unformatted. Use
+  the repo's own formatter in list or check mode for other languages
+  (`prettier --check`, `ruff format --check`).
+- **Classify every changed file.** `<old>` is `HEAD` for pending work and
+  `"<fork-sha>"` for a branch. `<tmp>` is the workflow's `mktemp -d`
+  directory. Run each line as its own call:
+  1. `git diff --name-only <old> -- '*.go'` lists the files.
+  2. `git worktree add --detach <tmp>/old <old>` checks out the old version
+     with its `go.mod`, so the formatter uses the right Go version.
+  3. `gofumpt -d <tmp>/old/<file>` for each file prints what the formatter
+     would change, and writes nothing.
+  4. `git worktree remove --force <tmp>/old` when done.
+
+  A hunk of `git diff <old> -- <file>` that also appears in step 3 is
+  format-only. A file added since `<old>` has none. With no commits yet, every
+  file is new, so skip the worktree. `git diff -w` misses token rewrites such
+  as `0755` to `0o755`. The scratch worktree leaves the user's tree alone, so
+  it is permitted in plan mode.
+- **Touched files** are files with at least one hunk that is not format-only.
+- **Rewrite narrowly.** Run `gofumpt -w` on touched files only, never on `.`.

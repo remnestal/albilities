@@ -1,7 +1,7 @@
 ---
 name: commit
 description: Turn uncommitted work into atomic git commits. Use when asked to commit, split, amend or reword, save progress or checkpoint, or before a plan step runs git commit. Not for past-commit questions, "commit to an approach", PR text, or PR-feedback fixups.
-allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/include-fragment *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git ls-files *), Bash(git rev-parse *), Bash(git branch -r --contains *), Bash(git symbolic-ref *), Bash(git merge-base *), Bash(git add *), Bash(git apply *), Bash(git restore *), Bash(git rm *), Bash(git stash push *), Bash(git write-tree), Bash(git commit-tree *), Bash(git worktree add *), Bash(git worktree remove *), Bash(git commit *), Bash(go build *), Bash(go vet *), Bash(go test *), Bash(golangci-lint run *), Bash(mktemp -d)
+allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/include-fragment *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git ls-files *), Bash(git rev-parse *), Bash(git branch -r --contains *), Bash(git symbolic-ref *), Bash(git merge-base *), Bash(git add *), Bash(git apply *), Bash(git restore *), Bash(git rm *), Bash(git stash push *), Bash(git write-tree), Bash(git commit-tree *), Bash(git worktree add *), Bash(git worktree remove *), Bash(git commit *), Bash(gofumpt -l *), Bash(gofumpt -d *), Bash(go build *), Bash(go vet *), Bash(go test *), Bash(golangci-lint run *), Bash(mktemp -d)
 ---
 
 # Commit
@@ -13,8 +13,9 @@ Steps 1 to 4 are the read-only part. Hard rules, before anything else:
 - **Never amend, reword or rebase a pushed commit unless the user asks.**
   `git status -sb` shows whether the branch is ahead of its upstream. If
   `git branch -r --contains HEAD` prints anything, HEAD is pushed.
-- **Show before you remove.** Nothing is removed until the user has seen the
-  hunk.
+- **Show before you remove.** A file whose every hunk is format-only may be
+  restored once the user has seen its file list. Anything else is removed only
+  after the user has seen the hunk.
 - **Never stage blindly.** No `git add -A` or `git add .` without reading
   everything it would pick up.
 - **Check and approve every commit before making it.** Step 6 builds and
@@ -95,6 +96,11 @@ Sort every hunk before staging anything:
   tree: a helper with no callers left, a comment on the old behaviour, a flag
   nothing reads. Grep for it. Each is a gate item: Remove in this commit
   (Recommended) or Skip (leave it).
+- **Format-only hunks,** classified as the changeset section says. They form
+  two gate items, each showing its file list: touched files and untouched
+  files. The options are a `style:` commit placed first, or Skip, which
+  restores them. Recommend the `style:` commit for touched files and Skip for
+  untouched ones.
 
 Report debris from the changeset check as gate items. Never commit a stray
 print or a skipped test without the user's say-so.
@@ -105,7 +111,7 @@ One commit is one change that builds and passes tests on its own. Split a fix
 from the refactor that enabled it, and a rename from a behaviour change. Code
 the change made dead leaves in that commit, never in its own `refactor:`.
 
-Order: prerequisites (refactors, renames, gate items of
+Order: the `style:` commit, prerequisites (refactors, renames, gate items of
 that shape), the behaviour change, then other separate commits. If a split
 would break the build midway, keep one commit and say so in its body.
 
@@ -121,6 +127,8 @@ disagree with the split.
   wanted ones, split the hunk (below) or remove the line with Edit. Never
   restore a whole file that holds a wanted hunk.
 - **Skip on an untracked file:** `rm -- <path>`, which prompts.
+- **Formatting taken out:** `git restore -- <file>` for untouched files;
+  reverse the hunks in touched ones.
 
 Then run `go build ./...` or the repo's build. A drop must leave the tree
 building, so an import only the dropped code used goes too.
