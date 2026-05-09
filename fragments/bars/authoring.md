@@ -59,3 +59,8 @@ them per kind of text.
   Good: `fix(auth): reject tokens past their expiry`
 - The body says why the change exists and what was wrong before. The diff
   shows how, so leave that out.
+
+**Issue.**
+- The repro outranks brevity. Give steps, expected, actual, the exact error
+  text and versions, even when that runs long.
+- Mark speculation about the cause as speculation, apart from what you observed.

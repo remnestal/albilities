@@ -1,0 +1,3 @@
+- Before doing anything outside what the user asked for, including your own additions, ask: skip, separate commit in this change, or follow-up (a backlog item, optionally a GitHub issue). Always recommend one.
+- Stay silent for work the user directed, for work with the same reason in the same files, and for anything too vague to classify. When unsure, stay silent: the commit step asks about every unclear hunk.
+- Check your own tangents at plan exit (list them in the plan's Follow-ups section) and before each commit.

@@ -1,0 +1,16 @@
+#!/bin/sh
+# session-start: the SessionStart hook's single line of context. Inside a git
+# repository it prints the open backlog count and the user-only skills.
+# Outside one it prints nothing. It always exits 0.
+
+git rev-parse --git-dir >/dev/null 2>&1 || exit 0
+
+skills='/backlog /issue'
+n=$("$(dirname "$0")/backlog" count --all-branches 2>/dev/null) || n=0
+
+case $n in
+'' | *[!0-9]* | 0) printf '%s\n' "$skills" ;;
+1) printf '1 open backlog item · %s\n' "$skills" ;;
+*) printf '%s open backlog items · %s\n' "$n" "$skills" ;;
+esac
+exit 0

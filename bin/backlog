@@ -1,0 +1,399 @@
+#!/bin/sh
+# backlog: per-branch scope, milestones and deferred items, stored outside
+# the repo. Run `backlog --help` for the commands and the file format.
+
+set -u
+
+nl='
+'
+
+usage() {
+	cat <<'EOF'
+Usage: backlog <command> [options]
+
+Commands:
+  add --severity <high|medium|low> [--issue N] [--pr N] '<text>'
+                          Add an item to the branch.
+  list [--all-branches]   Show the scope, milestones and numbered items.
+  rm <n>                  Delete item n, as numbered by `list`.
+  scope                   Print the branch scope, or nothing if unset.
+  scope set [--issue N] [--pr N] ['<text>']
+                          Set the scope. With text, replace the whole line:
+                          links not passed are dropped. Without text, keep
+                          the current text and other link, and update only
+                          the given links.
+  scope clear             Remove the scope.
+  milestone add '<text>'  Add a milestone to the branch (at most 5).
+  milestone list          Show the milestones, numbered m1, m2, ...
+  milestone done <n>      Delete milestone n (m2 or 2).
+  count [--all-branches]  Print the number of items (milestones not counted).
+  path                    Print this repo's store directory.
+
+Branch commands (add, list, rm, scope, milestone, count) act on the current
+branch. Pass --branch <name> to act on another one, or when HEAD is detached.
+Put text that starts with "-" after --, as in: add --severity low -- '-v breaks'.
+
+Format:
+  One file per branch, in this order. Every line starts with a [header];
+  links live only in the header, so text never counts as a link.
+    [scope #12 !34] <text>     optional, at most one
+    [milestone] <text>         at most 5, in the order added
+    [high #12 !34] <text>      items, kept sorted high, medium, low
+  In a header, #N is an issue and !N a pull request; both are optional.
+  Done items and milestones are deleted. There is no history.
+
+Store:
+  $ALBILITIES_STATE, else ${XDG_STATE_HOME:-$HOME/.local/state}/albilities.
+  (CLAUDE_PLUGIN_DATA is not used: hooks and skills may see different
+  environments, and both must resolve the same store.) Branch files live in
+  one directory per repository, keyed by the git common dir, so worktrees
+  share them.
+EOF
+}
+
+die() {
+	printf 'backlog: %s\n' "$*" >&2
+	exit 1
+}
+
+store_root() {
+	if [ -n "${ALBILITIES_STATE:-}" ]; then
+		printf '%s\n' "$ALBILITIES_STATE"
+	else
+		printf '%s\n' "${XDG_STATE_HOME:-$HOME/.local/state}/albilities"
+	fi
+}
+
+# repo_dir prints the store directory for the current repository.
+repo_dir() {
+	common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) ||
+		common=$(git rev-parse --git-common-dir 2>/dev/null) ||
+		die "not inside a git repository"
+	common=$(cd "$common" 2>/dev/null && pwd -P) ||
+		die "cannot resolve git common dir"
+	case $common in
+	*/.git) name=$(basename "$(dirname "$common")") ;;
+	*) name=$(basename "$common" .git) ;;
+	esac
+	name=$(printf '%s' "$name" | tr -c 'A-Za-z0-9._-' '_')
+	sum=$(printf '%s' "$common" | cksum | cut -d' ' -f1)
+	printf '%s/%s-%s\n' "$(store_root)" "$name" "$sum"
+}
+
+current_branch() {
+	git symbolic-ref --short -q HEAD 2>/dev/null ||
+		die "HEAD is detached; pass --branch <name>"
+}
+
+encode_branch() {
+	printf '%s' "$1" | sed 's/%/%25/g; s|/|%2F|g'
+}
+
+decode_branch() {
+	printf '%s' "$1" | sed 's|%2F|/|g; s/%25/%/g'
+}
+
+# write_atomic copies stdin to $1 through a temp file in the same directory.
+# Empty input deletes $1.
+write_atomic() {
+	dir=$(dirname "$1")
+	mkdir -p "$dir" || die "cannot create $dir"
+	tmp=$(mktemp "$dir/.tmp.XXXXXX") || die "cannot write in $dir"
+	cat >"$tmp"
+	if [ -s "$tmp" ]; then
+		mv -f "$tmp" "$1" || {
+			rm -f "$tmp"
+			die "cannot write $1"
+		}
+	else
+		rm -f "$tmp" "$1"
+	fi
+}
+
+check_line() {
+	case $1 in
+	*"$nl"*) die "$2 must be one line" ;;
+	esac
+}
+
+check_num() {
+	case $1 in
+	'' | *[!0-9]*) die "$2 must be a number, got '$1'" ;;
+	esac
+}
+
+# header prints a line header: [<kind> #issue !pr].
+header() {
+	h="[$1"
+	[ -z "$2" ] || h="$h #$2"
+	[ -z "$3" ] || h="$h !$3"
+	printf '%s]' "$h"
+}
+
+# scope_line prints the scope line. A pre-header "scope: " line is read as
+# plain text without links.
+scope_line() {
+	[ -f "$1" ] && sed -e 's/^scope: /[scope] /' -e '/^\[scope[] ]/!d' "$1"
+	return 0
+}
+
+milestones() {
+	[ -f "$1" ] && grep '^\[milestone\] ' "$1"
+	return 0
+}
+
+items() {
+	[ -f "$1" ] && grep -E '^\[(high|medium|low)[] ]' "$1"
+	return 0
+}
+
+# save writes the branch file from a scope line, milestone lines and item
+# lines. Items are sorted by severity, keeping their order within each level.
+save() {
+	{
+		[ -z "$2" ] || printf '%s\n' "$2"
+		[ -z "$3" ] || printf '%s\n' "$3"
+		for s in high medium low; do
+			printf '%s\n' "$4" | grep -E "^\[$s[] ]"
+		done
+	} | write_atomic "$1"
+}
+
+# parse_args reads the options of the branch commands, in any position, and
+# sets repo, branch and file. Positional arguments land in arg1..arg3.
+parse_args() {
+	all=
+	sev=
+	issue=
+	pr=
+	branch=
+	nargs=0
+	arg1=
+	arg2=
+	arg3=
+	opts=1
+	while [ $# -gt 0 ]; do
+		if [ -n "$opts" ]; then
+			case $1 in
+			--branch)
+				[ $# -ge 2 ] || die "--branch needs a value"
+				branch=$2
+				shift 2
+				continue
+				;;
+			--all-branches)
+				all=1
+				shift
+				continue
+				;;
+			--severity)
+				[ $# -ge 2 ] || die "--severity needs a value"
+				sev=$2
+				shift 2
+				continue
+				;;
+			--issue)
+				[ $# -ge 2 ] || die "--issue needs a value"
+				issue=${2#\#}
+				check_num "$issue" "--issue"
+				shift 2
+				continue
+				;;
+			--pr)
+				[ $# -ge 2 ] || die "--pr needs a value"
+				pr=${2#!}
+				check_num "$pr" "--pr"
+				shift 2
+				continue
+				;;
+			--)
+				opts=
+				shift
+				continue
+				;;
+			-?*) die "unknown option $1 (see --help; put text starting with - after --)" ;;
+			esac
+		fi
+		nargs=$((nargs + 1))
+		case $nargs in
+		1) arg1=$1 ;;
+		2) arg2=$1 ;;
+		3) arg3=$1 ;;
+		*) die "too many arguments (quote the text)" ;;
+		esac
+		shift
+	done
+	repo=$(repo_dir) || exit 1
+	if [ -n "$branch" ]; then
+		git check-ref-format --branch "$branch" >/dev/null 2>&1 ||
+			die "invalid branch name '$branch'"
+	elif [ -z "$all" ]; then
+		branch=$(current_branch) || exit 1
+	fi
+	file="$repo/branches/$(encode_branch "$branch")"
+}
+
+cmd_add() {
+	parse_args "$@"
+	[ -z "$all" ] || die "add takes no --all-branches"
+	case $sev in
+	high | medium | low) ;;
+	'') die "add needs --severity high|medium|low" ;;
+	*) die "severity must be high, medium or low, got '$sev'" ;;
+	esac
+	[ "$nargs" -eq 1 ] || die "add needs exactly one text argument"
+	[ -n "$arg1" ] || die "item text is empty"
+	check_line "$arg1" "item text"
+	old=$(items "$file")
+	save "$file" "$(scope_line "$file")" "$(milestones "$file")" \
+		"${old:+$old$nl}$(header "$sev" "$issue" "$pr") $arg1"
+}
+
+print_branch() {
+	scope_line "$1"
+	milestones "$1" | sed 's/^\[milestone\] //' | awk '{ printf "m%d. %s\n", NR, $0 }'
+	items "$1" | awk '{ printf "%d. %s\n", NR, $0 }'
+}
+
+cmd_list() {
+	parse_args "$@"
+	[ "$nargs" -eq 0 ] || die "list takes no arguments"
+	if [ -z "$all" ]; then
+		print_branch "$file"
+		return
+	fi
+	for f in "$repo"/branches/*; do
+		[ -f "$f" ] || continue
+		printf '%s\n' "$(decode_branch "$(basename "$f")")"
+		print_branch "$f" | sed 's/^/  /'
+	done
+}
+
+cmd_rm() {
+	parse_args "$@"
+	[ -z "$all" ] || die "rm takes no --all-branches"
+	[ "$nargs" -eq 1 ] || die "rm needs one item number"
+	check_num "$arg1" "item number"
+	total=$(items "$file" | wc -l | tr -d ' ')
+	if [ "$arg1" -lt 1 ] || [ "$arg1" -gt "$total" ]; then
+		die "no item $arg1 on $branch ($total items)"
+	fi
+	save "$file" "$(scope_line "$file")" "$(milestones "$file")" \
+		"$(items "$file" | awk -v n="$arg1" 'NR != n')"
+}
+
+cmd_scope() {
+	parse_args "$@"
+	[ -z "$all" ] || die "scope takes no --all-branches"
+	sub=$arg1
+	text=$arg2
+	[ "$nargs" -eq 0 ] || nargs=$((nargs - 1))
+	old=$(scope_line "$file")
+	case $sub in
+	'')
+		[ -z "$old" ] || printf '%s\n' "$old"
+		return
+		;;
+	clear)
+		[ "$nargs" -eq 0 ] || die "scope clear takes no arguments"
+		new=
+		;;
+	set)
+		if [ "$nargs" -eq 0 ]; then
+			# No text: keep the old text and the links this call doesn't
+			# replace. With text, the scope gets only the links passed.
+			[ -n "$issue$pr" ] || die "scope set needs text, --issue or --pr"
+			[ -n "$old" ] || die "no scope text to keep; pass the text"
+			text=${old#*] }
+			old_head=${old%%]*}
+			for l in ${old_head#\[scope}; do
+				case $l in
+				\#*) [ -n "$issue" ] || issue=${l#\#} ;;
+				!*) [ -n "$pr" ] || pr=${l#!} ;;
+				esac
+			done
+		else
+			[ "$nargs" -eq 1 ] || die "scope set takes one text argument"
+		fi
+		[ -n "$text" ] || die "scope text is empty"
+		check_line "$text" "scope text"
+		new="$(header scope "$issue" "$pr") $text"
+		;;
+	*) die "scope takes set or clear, got '$sub'" ;;
+	esac
+	save "$file" "$new" "$(milestones "$file")" "$(items "$file")"
+}
+
+cmd_milestone() {
+	parse_args "$@"
+	[ -z "$all" ] || die "milestone takes no --all-branches"
+	[ -z "$sev$issue$pr" ] || die "milestone takes no --severity, --issue or --pr"
+	old=$(milestones "$file")
+	total=0
+	[ -z "$old" ] || total=$(printf '%s\n' "$old" | wc -l | tr -d ' ')
+	case $arg1 in
+	add)
+		[ "$nargs" -eq 2 ] || die "milestone add needs one text argument"
+		[ -n "$arg2" ] || die "milestone text is empty"
+		check_line "$arg2" "milestone text"
+		[ "$total" -lt 5 ] ||
+			die "$branch has 5 milestones; mark one done first"
+		new="${old:+$old$nl}[milestone] $arg2"
+		;;
+	list)
+		[ "$nargs" -eq 1 ] || die "milestone list takes no arguments"
+		milestones "$file" | sed 's/^\[milestone\] //' |
+			awk '{ printf "m%d. %s\n", NR, $0 }'
+		return
+		;;
+	done)
+		[ "$nargs" -eq 2 ] || die "milestone done needs one milestone number"
+		n=${arg2#m}
+		check_num "$n" "milestone number"
+		if [ "$n" -lt 1 ] || [ "$n" -gt "$total" ]; then
+			die "no milestone m$n on $branch ($total milestones)"
+		fi
+		new=$(printf '%s\n' "$old" | awk -v n="$n" 'NR != n')
+		;;
+	'') die "milestone needs add, list or done" ;;
+	*) die "milestone takes add, list or done, got '$arg1'" ;;
+	esac
+	save "$file" "$(scope_line "$file")" "$new" "$(items "$file")"
+}
+
+cmd_count() {
+	parse_args "$@"
+	[ "$nargs" -eq 0 ] || die "count takes no arguments"
+	if [ -z "$all" ]; then
+		items "$file" | wc -l | tr -d ' '
+		return
+	fi
+	n=0
+	for f in "$repo"/branches/*; do
+		[ -f "$f" ] || continue
+		n=$((n + $(items "$f" | wc -l)))
+	done
+	printf '%s\n' "$n"
+}
+
+[ $# -gt 0 ] || {
+	usage >&2
+	exit 2
+}
+
+cmd=$1
+shift
+case $cmd in
+-h | --help | help) usage ;;
+add) cmd_add "$@" ;;
+list) cmd_list "$@" ;;
+rm) cmd_rm "$@" ;;
+scope) cmd_scope "$@" ;;
+milestone) cmd_milestone "$@" ;;
+count) cmd_count "$@" ;;
+path)
+	[ $# -eq 0 ] || die "path takes no arguments"
+	repo_dir
+	;;
+*) die "unknown command '$cmd' (see --help)" ;;
+esac

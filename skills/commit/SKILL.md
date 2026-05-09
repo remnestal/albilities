@@ -1,7 +1,7 @@
 ---
 name: commit
 description: Turn uncommitted work into atomic git commits. Use when asked to commit, split, amend or reword, save progress or checkpoint, or before a plan step runs git commit. Not for past-commit questions, "commit to an approach", PR text, or PR-feedback fixups.
-allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/include-fragment *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git ls-files *), Bash(git rev-parse *), Bash(git branch -r --contains *), Bash(git symbolic-ref *), Bash(git merge-base *), Bash(git add *), Bash(git apply *), Bash(git restore *), Bash(git rm *), Bash(git stash push *), Bash(git write-tree), Bash(git commit-tree *), Bash(git worktree add *), Bash(git worktree remove *), Bash(git commit *), Bash(gofumpt -l *), Bash(gofumpt -d *), Bash(go build *), Bash(go vet *), Bash(go test *), Bash(golangci-lint run *), Bash(mktemp -d)
+allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/include-fragment *), Bash(${CLAUDE_PLUGIN_ROOT}/bin/backlog *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git ls-files *), Bash(git rev-parse *), Bash(git branch -r --contains *), Bash(git symbolic-ref *), Bash(git merge-base *), Bash(git add *), Bash(git apply *), Bash(git restore *), Bash(git rm *), Bash(git stash push *), Bash(git write-tree), Bash(git commit-tree *), Bash(git worktree add *), Bash(git worktree remove *), Bash(git commit *), Bash(gofumpt -l *), Bash(gofumpt -d *), Bash(go build *), Bash(go vet *), Bash(go test *), Bash(golangci-lint run *), Bash(mktemp -d)
 ---
 
 # Commit
@@ -20,6 +20,7 @@ Steps 1 to 4 are the read-only part. Hard rules, before anything else:
   everything it would pick up.
 - **Check and approve every commit before making it.** Step 6 builds and
   tests the staged tree. Step 7 shows the whole message and waits for a yes.
+- **Ask before filing an issue.**
 - **One command per Bash call, plainly.** Pre-approvals don't match variables,
   pipes or `&&`, and each call is a fresh shell. Run `mktemp -d` once and write
   its literal path wherever `<tmp>` appears. Only git and the Go tools write
@@ -50,21 +51,24 @@ Classify each item against the actual diff:
 |---|---|---|---|
 | no | no | One change | Part of the change; absorb |
 | no | yes | Prerequisite | Separate commit, ordered first |
-| yes | no | Builds on the current work | Skip; do it after this change |
-| yes | yes | Independent | Separate commit if small and in touched files, else skip |
+| yes | no | Builds on the current work | Follow-up |
+| yes | yes | Independent | Follow-up; separate commit only if small and in touched files |
 
 Put each item through the decision gate above, hunk under **Where**. The
 **Problem** line names the shape and its answers: "Independent (A yes, B yes):
 `Clamp` now treats `hi` as inclusive." Options, recommendation first:
 
 - **Separate commit** on this branch, ordered by its shape.
+- **Follow-up.** A backlog item, written in step 8, which picks its severity.
+  The gate shows none.
+- **Follow-up with an issue,** when the work outlives the branch.
 - **Leave out,** for untracked files: it stays in the tree, uncommitted.
   Recommend it for untracked non-code files, such as notes.
 - **Skip.** A hunk in the tree is reversed; an untracked file is deleted.
 
-**The gate records; later steps act:** removals in step 5. An answer
-settles the item for the session. Never ask about it again, even if the diff
-grows.
+**The gate records; later steps act:** removals and parking in step 5,
+follow-ups in step 8. An answer settles the item for the session. Never ask
+about it again, even if the diff grows.
 
 ## 1. Read the changeset
 
@@ -77,7 +81,8 @@ style below. If the tree is clean, say so and stop.
 
 ## 2. Confirm the intended change
 
-Infer it from the first source that says: the conversation, then the branch name
+Infer it from the first source that says: the conversation, then
+`${CLAUDE_PLUGIN_ROOT}/bin/backlog scope`, then the branch name
 (`git rev-parse --abbrev-ref HEAD`) and the diff. Show one line, such as
 "**Intended change:** retry failed fetches with backoff (from the
 conversation)". Ask with `AskUserQuestion`: Accept (Recommended) or Correct.
@@ -95,12 +100,12 @@ Sort every hunk before staging anything:
 - **Scar tissue.** Code the change makes dead or wrong that is still in the
   tree: a helper with no callers left, a comment on the old behaviour, a flag
   nothing reads. Grep for it. Each is a gate item: Remove in this commit
-  (Recommended) or Skip (leave it).
+  (Recommended), Follow-up, or Skip (leave it).
 - **Format-only hunks,** classified as the changeset section says. They form
   two gate items, each showing its file list: touched files and untouched
-  files. The options are a `style:` commit placed first, or Skip, which
-  restores them. Recommend the `style:` commit for touched files and Skip for
-  untouched ones.
+  files. The options are a `style:` commit placed first, Follow-up (one
+  low-severity item) or Skip. Recommend the `style:` commit for touched files
+  and the follow-up for untouched ones.
 
 Report debris from the changeset check as gate items. Never commit a stray
 print or a skipped test without the user's say-so.
@@ -129,6 +134,10 @@ disagree with the split.
 - **Skip on an untracked file:** `rm -- <path>`, which prompts.
 - **Formatting taken out:** `git restore -- <file>` for untouched files;
   reverse the hunks in touched ones.
+- **A follow-up that must leave the tree:**
+  `git stash push -u -m '<label>' -- <paths>`. Without `-u`, new files leak
+  into the next commit. Run `git rev-parse stash@{0}` at once, since the
+  index shifts, and put `git stash apply <sha>` in the backlog text.
 
 Then run `go build ./...` or the repo's build. A drop must leave the tree
 building, so an import only the dropped code used goes too.
@@ -196,10 +205,26 @@ MSG
 Check that `git log -1 --stat` matches the plan. Repeat steps 5 to 7 per
 commit. Afterwards, `git status --short` shows only what was left out.
 
-## 8. Report
+## 8. Follow-ups
 
-List the commits (short SHA and subject) and what was left unstaged. Nothing
-else.
+!`${CLAUDE_PLUGIN_ROOT}/bin/include-fragment bars/review`
+
+!`${CLAUDE_PLUGIN_ROOT}/bin/include-fragment plumbing/backlog`
+
+Record each follow-up, including the formatting one, with a severity from
+the bar above:
+
+```
+${CLAUDE_PLUGIN_ROOT}/bin/backlog add --severity <high|medium|low> [--issue <N>] '<text>'
+```
+
+For a follow-up with an issue, follow
+`${CLAUDE_PLUGIN_ROOT}/bin/include-fragment formats/issue`, then pass its number.
+
+## 9. Report
+
+List the commits (short SHA and subject), what was left unstaged, what went to
+the backlog, and any parked stash with its restore command. Nothing else.
 
 ## Amend and reword
 
