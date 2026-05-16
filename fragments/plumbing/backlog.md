@@ -17,8 +17,8 @@ the user the store path unless asked.
 - **In plan mode, don't write anything.** Collect follow-ups in the plan's
   "Follow-ups" section, one line each with its severity. Write them with the
   script after the user approves the plan. Reading is fine in plan mode.
-- Add an item only when the user chose it: a follow-up for a sidetrack or an
-  explicit request. Never add one on your own
+- Add an item only when the user chose it: a follow-up for a sidetrack, a
+  deferred review finding, or an explicit request. Never add one on your own
   initiative. Run `list` first and skip duplicates.
 - Scope, milestones and links are written by the workflow that owns
   them, as part of its job.
