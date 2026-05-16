@@ -144,11 +144,15 @@ new untracked files: list them with
 `git ls-files --others --exclude-standard`, then `wc -l` each. Leave out
 generated files, lockfiles, vendored code and test fixtures.
 
-- **Small** (at most 150 changed lines in at most 5 files): run every lens
-  yourself in one pass. No subagents.
-- **Otherwise:** three `general-purpose` subagents, one per lens group,
+Then ask the user, with `AskUserQuestion`, which review to run. Name the size
+and any risky areas the diff touches: concurrency, timeouts or I/O, auth or
+secrets, persistence or migrations, a public API, removed guards.
+
+- **Fast:** you run every lens yourself in one pass. No subagents.
+  Recommend it for a small diff that touches no risky area.
+- **Thorough:** three `general-purpose` subagents, one per lens group,
   launched in one message so they run in parallel. Don't use `Explore`; it
-  samples instead of auditing.
+  samples instead of auditing. Recommend it whenever a risky area is touched.
   - *Runtime:* security and runtime; concurrency and consistency.
   - *Design:* design; structure; conventions.
   - *Prose and tests:* prose; the tests lens.
@@ -156,6 +160,9 @@ generated files, lockfiles, vendored code and test fixtures.
   Leave out a group with nothing to judge: runtime needs executable code,
   prose and tests needs comments, docs or tests. Name the skipped group in
   the report.
+
+A fast review ends with a one-line recommendation: run a thorough pass or
+not, and why. Name the risky areas or the uncertain findings behind it.
 
 Over about 2,000 changed lines, offer first to review per commit or per
 directory.
