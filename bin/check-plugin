@@ -1,0 +1,70 @@
+#!/bin/sh
+# check-plugin validates the plugin's skills and fragments.
+#
+# It fails when a skill or fragment names a fragment that doesn't exist
+# (every name after include-fragment counts, across line breaks), when a
+# skill injects or runs include-fragment without pre-approving it, when a
+# skill calls the backlog script without pre-approving it, or when any
+# file contains an em dash. Run it from anywhere; it resolves the plugin
+# root itself.
+set -eu
+
+root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+cd "$root"
+fail=0
+
+err() {
+	printf 'check-plugin: %s\n' "$*" >&2
+	fail=1
+}
+
+# fragment_names prints each name that follows include-fragment in file $1,
+# one per line. Lines are joined first, so a name list that wraps still
+# counts in full.
+fragment_names() {
+	tr '\n' ' ' <"$1" |
+		grep -o 'include-fragment\([[:blank:]]\{1,\}[A-Za-z0-9_/-]\{1,\}\)\{1,\}' |
+		sed 's/^include-fragment//' | tr ' \t' '\n\n' | sed '/^$/d' | sort -u || true
+}
+
+for file in skills/*/SKILL.md fragments/*/*.md; do
+	for n in $(fragment_names "$file"); do
+		[ -f "fragments/$n.md" ] || err "$file: missing fragment $n"
+	done
+done
+
+for skill in skills/*/SKILL.md; do
+	head=$(sed -n '1,/^---$/{p;}' "$skill" | sed -n '2,/^---$/p')
+	allowed=$(printf '%s\n' "$head" | sed -n 's/^allowed-tools: //p')
+
+	names=$(fragment_names "$skill")
+	if [ -n "$names" ]; then
+		case $allowed in
+		*'bin/include-fragment *'*) ;;
+		*) err "$skill: uses bin/include-fragment without allowed-tools Bash(\${CLAUDE_PLUGIN_ROOT}/bin/include-fragment *)" ;;
+		esac
+	fi
+
+	uses_backlog=0
+	grep -q 'bin/backlog\|`backlog ' "$skill" && uses_backlog=1
+	for n in $names; do
+		[ "$n" = plumbing/backlog ] && uses_backlog=1
+	done
+	if [ "$uses_backlog" = 1 ]; then
+		case $allowed in
+		*'bin/backlog *'*) ;;
+		*) err "$skill: uses the backlog script without pre-approving it" ;;
+		esac
+	fi
+
+	if grep -q 'cat "\${CLAUDE_PLUGIN_ROOT}/fragments\|fragments/[a-z/-]*\.md)' "$skill"; then
+		err "$skill: reads fragments directly; use bin/include-fragment"
+	fi
+done
+
+if grep -rln "$(printf '\342\200\224')" skills fragments rules bin hooks 2>/dev/null; then
+	err "em dash found in the files above"
+fi
+
+[ "$fail" = 0 ] && echo "check-plugin: ok"
+exit "$fail"
