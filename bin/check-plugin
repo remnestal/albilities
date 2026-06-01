@@ -62,7 +62,7 @@ for skill in skills/*/SKILL.md; do
 	fi
 done
 
-if grep -rln "$(printf '\342\200\224')" skills fragments rules bin hooks 2>/dev/null; then
+if grep -rln "$(printf '\342\200\224')" skills fragments rules bin hooks CLAUDE.md 2>/dev/null; then
 	err "em dash found in the files above"
 fi
 
