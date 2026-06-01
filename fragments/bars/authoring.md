@@ -60,6 +60,11 @@ them per kind of text.
 - The body says why the change exists and what was wrong before. The diff
   shows how, so leave that out.
 
+**PR description.**
+- The first paragraph is the hook: what changes and why, readable on its own.
+- Add one more paragraph only for a gotcha or constraint a reviewer must know.
+- No provenance or journey. Link issues (`Closes #42`) instead of retelling them.
+
 **Issue.**
 - The repro outranks brevity. Give steps, expected, actual, the exact error
   text and versions, even when that runs long.
