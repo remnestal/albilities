@@ -1,6 +1,6 @@
 #!/bin/sh
-# backlog: per-branch scope, milestones and deferred items, stored outside
-# the repo. Run `backlog --help` for the commands and the file format.
+# backlog: per-branch scope, milestones, deferred items and PR notes, stored
+# outside the repo. Run `backlog --help` for the commands and the file format.
 
 set -u
 
@@ -27,11 +27,20 @@ Commands:
   milestone list          Show the milestones, numbered m1, m2, ...
   milestone done <n>      Delete milestone n (m2 or 2).
   count [--all-branches]  Print the number of items (milestones not counted).
+  note-get <owner/repo#N> <thread-id>
+                          Print a PR note, or nothing if there is none.
+  note-set <owner/repo#N> <thread-id> '<text>'
+                          Write a PR note. The text may span lines.
+  note-rm <owner/repo#N> [<thread-id>]
+                          Delete one note, or every note for the PR.
+  note-list <owner/repo#N>
+                          List thread IDs with the first line of each note.
   path                    Print this repo's store directory.
 
 Branch commands (add, list, rm, scope, milestone, count) act on the current
 branch. Pass --branch <name> to act on another one, or when HEAD is detached.
 Put text that starts with "-" after --, as in: add --severity low -- '-v breaks'.
+Note commands work from any directory, inside a repository or not.
 
 Format:
   One file per branch, in this order. Every line starts with a [header];
@@ -41,13 +50,15 @@ Format:
     [high #12 !34] <text>      items, kept sorted high, medium, low
   In a header, #N is an issue and !N a pull request; both are optional.
   Done items and milestones are deleted. There is no history.
+  PR notes are free text, one file per review thread (or comment ID).
 
 Store:
   $ALBILITIES_STATE, else ${XDG_STATE_HOME:-$HOME/.local/state}/albilities.
   (CLAUDE_PLUGIN_DATA is not used: hooks and skills may see different
   environments, and both must resolve the same store.) Branch files live in
   one directory per repository, keyed by the git common dir, so worktrees
-  share them.
+  share them. PR notes live in prs/<owner>/<repo>/<N>/, apart from any
+  checkout.
 EOF
 }
 
@@ -376,6 +387,73 @@ cmd_count() {
 	printf '%s\n' "$n"
 }
 
+# pr_dir validates owner/repo#N and prints its notes directory. The path
+# depends only on the store root, never on the current directory. Owner and
+# repo are lowercased, as GitHub treats them case-insensitively.
+pr_dir() {
+	printf '%s' "$1" | grep -Eq '^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+#[0-9]+$' ||
+		die "PR must look like owner/repo#N, got '$1'"
+	owner=${1%%/*}
+	rest=${1#*/}
+	name=${rest%%#*}
+	num=${rest#*#}
+	case "$owner $name" in
+	.\ * | ..\ * | *\ . | *\ ..) die "invalid PR '$1'" ;;
+	esac
+	owner=$(printf '%s' "$owner" | tr 'A-Z' 'a-z')
+	name=$(printf '%s' "$name" | tr 'A-Z' 'a-z')
+	printf '%s/prs/%s/%s/%s\n' "$(store_root)" "$owner" "$name" "$num"
+}
+
+check_thread() {
+	printf '%s' "$1" | grep -Eq '^[A-Za-z0-9_=-]+$' ||
+		die "thread ID must be letters, digits, _, = or -, got '$1'"
+}
+
+cmd_note_get() {
+	[ $# -eq 2 ] || die "note-get needs <owner/repo#N> <thread-id>"
+	d=$(pr_dir "$1") || exit 1
+	check_thread "$2"
+	[ ! -f "$d/$2" ] || cat "$d/$2"
+}
+
+cmd_note_set() {
+	[ $# -eq 3 ] || die "note-set needs <owner/repo#N> <thread-id> '<text>'"
+	d=$(pr_dir "$1") || exit 1
+	check_thread "$2"
+	# "-" reads stdin; kept for older callers, not documented.
+	if [ "$3" = - ]; then
+		text=$(cat)
+	else
+		text=$3
+	fi
+	[ -n "$text" ] || die "note is empty; use note-rm to delete it"
+	printf '%s\n' "$text" | write_atomic "$d/$2"
+}
+
+cmd_note_rm() {
+	[ $# -ge 1 ] && [ $# -le 2 ] || die "note-rm needs <owner/repo#N> [<thread-id>]"
+	d=$(pr_dir "$1") || exit 1
+	if [ $# -eq 2 ]; then
+		check_thread "$2"
+		rm -f "$d/$2"
+	else
+		rm -rf "$d"
+	fi
+	# Drop empty parents up to prs/; rmdir refuses non-empty ones.
+	rmdir "$d" "$(dirname "$d")" "$(dirname "$(dirname "$d")")" 2>/dev/null
+	return 0
+}
+
+cmd_note_list() {
+	[ $# -eq 1 ] || die "note-list needs <owner/repo#N>"
+	d=$(pr_dir "$1") || exit 1
+	for f in "$d"/*; do
+		[ -f "$f" ] || continue
+		printf '%s\t%s\n' "$(basename "$f")" "$(head -n 1 "$f")"
+	done
+}
+
 [ $# -gt 0 ] || {
 	usage >&2
 	exit 2
@@ -391,6 +469,10 @@ rm) cmd_rm "$@" ;;
 scope) cmd_scope "$@" ;;
 milestone) cmd_milestone "$@" ;;
 count) cmd_count "$@" ;;
+note-get) cmd_note_get "$@" ;;
+note-set) cmd_note_set "$@" ;;
+note-rm) cmd_note_rm "$@" ;;
+note-list) cmd_note_list "$@" ;;
 path)
 	[ $# -eq 0 ] || die "path takes no arguments"
 	repo_dir

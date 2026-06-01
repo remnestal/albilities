@@ -11,7 +11,7 @@ the review fans out, the passes read the diff, not you. Whoever runs a lens
 also reads the code around each hunk.
 
 `<base>` below is the diff base the skill resolved, written literally: the
-fork SHA of your branch.
+fork SHA for your own branch, `origin/<baseRefName>` for a PR.
 
 **Dependency lookups go through the `LSP` tool** (load it with `ToolSearch` if
 it isn't listed). `hover` gives a symbol's signature and doc, `goToDefinition`
@@ -139,8 +139,9 @@ changed production code.
 
 ## Fan-out
 
-Count changed lines with `git diff --numstat <base>`, then add the lines of
-new untracked files: list them with
+Count changed lines with `git diff --numstat <base>` for your own branch, or
+`git diff --numstat origin/<baseRefName>...HEAD` in the PR's clone. For your
+own branch, add the lines of new untracked files: list them with
 `git ls-files --others --exclude-standard`, then `wc -l` each. Leave out
 generated files, lockfiles, vendored code and test fixtures.
 

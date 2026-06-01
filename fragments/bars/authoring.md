@@ -65,6 +65,14 @@ them per kind of text.
 - Add one more paragraph only for a gotcha or constraint a reviewer must know.
 - No provenance or journey. Link issues (`Closes #42`) instead of retelling them.
 
+**Review comment.**
+- One plain sentence that names the problem and its consequence.
+  Bad: "Have you considered thread safety here? In Go, maps generally..."
+  Good: "`seen` is written from two goroutines without a lock, so entries get lost."
+- Prefix non-blocking comments with `nit:` or `optional:`. Unprefixed means blocking.
+- Don't teach and don't over-explain. The author asks a follow-up if unclear.
+- Praise goes in its own comment, never wrapped around a finding.
+
 **Issue.**
 - The repro outranks brevity. Give steps, expected, actual, the exact error
   text and versions, even when that runs long.

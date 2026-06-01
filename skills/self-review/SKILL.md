@@ -1,6 +1,6 @@
 ---
 name: self-review
-description: Review your own branch, uncommitted work included, before it goes up. Runs the review engine, asks you to accept & fix, defer or skip each finding, and fixes accepted ones in the working tree. Never posts, stages or commits. Not for someone else's PR.
+description: Review your own branch, uncommitted work included, before it goes up. Runs the review engine, asks you to accept & fix, defer or skip each finding, and fixes accepted ones in the working tree. Never posts, stages or commits. Not for someone else's PR (use /pr-review).
 disable-model-invocation: true
 argument-hint: "[base branch]"
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/include-fragment *), Bash(${CLAUDE_PLUGIN_ROOT}/bin/backlog *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git rev-parse *), Bash(git merge-base *), Bash(git blame *), Bash(git ls-files *), Bash(git symbolic-ref *), Bash(gofumpt -l *), Bash(gh issue view *), Bash(gh repo view *), Bash(mktemp -d), Bash(git worktree add *), Bash(git worktree remove *), Bash(gofumpt -d *)

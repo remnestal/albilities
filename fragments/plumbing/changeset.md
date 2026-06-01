@@ -1,7 +1,7 @@
 # Changeset
 
 Pin down exactly what is under review or being committed before judging it.
-Run plain `git <cmd>` in the user's tree.
+Run plain `git <cmd>` in the user's tree outside PR mode.
 
 ## Base and fork point
 
@@ -31,6 +31,7 @@ Pick the diff that matches the job:
   commits. `git diff "<fork-sha>"` covers committed, staged and unstaged work.
   `<base>...HEAD` drops the working tree, so don't use it here.
 - **Pending work.** `git status --short`, `git diff` and `git diff --staged`.
+- **PR.** See PR mode below.
 
 Read the diff in full, then the surrounding code for anything non-trivial.
 The diff doesn't show what other callers expect or what local conventions are.
@@ -80,3 +81,29 @@ no longer show in `gofumpt -l`.
   it is permitted in plan mode.
 - **Touched files** are files with at least one hunk that is not format-only.
 - **Rewrite narrowly.** Run `gofumpt -w` on touched files only, never on `.`.
+
+## PR mode
+
+Review a pull request in its own clone at a fixed path, so allow rules can
+cover it and the user's tree stays untouched. In PR mode, run every git
+command as `git -C "<dir>" …` and never `cd`.
+
+`<dir>` is `~/.cache/albilities/pr/<owner>-<repo>-<N>` with `~` written out as
+the absolute home path. A quoted `~` doesn't expand. Run each line as its own
+call:
+
+```
+gh pr view <N> --json number,url,baseRefName,headRefOid,headRefName,isCrossRepository
+rm -rf "<dir>"
+git clone --filter=blob:none <base-repo-url> "<dir>"
+git -C "<dir>" fetch origin "pull/<N>/head:refs/pr/<N>" "<baseRefName>"
+git -C "<dir>" checkout --detach refs/pr/<N>
+```
+
+- `refs/pull/<N>/head` lives on the base repository, even for PRs from forks.
+- The base is `baseRefName` from `gh`, not `origin/HEAD`.
+- Check that `git -C "<dir>" rev-parse HEAD` equals `headRefOid`. If it
+  differs, the PR moved: fetch again before going further.
+- The diff is `git -C "<dir>" diff "origin/<baseRefName>...HEAD"`. Three dots
+  exclude drift on the base branch.
+- Remove `<dir>` when the work is done.
