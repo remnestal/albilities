@@ -102,7 +102,8 @@ last question, highest number first.
 5. **Show what is left.** Run `backlog list` again. Show the current branch
    first: its scope, its milestones, then its items grouped high, medium, low.
    Other branches follow, one line each with their item count. Name a next
-   step only when it is clear: the first open milestone.
+   step only when it is clear: the first open milestone, or `/pr-feedback`
+   when the branch's PR is open.
 
 To file an item as an issue, point the user to `/issue`.
 

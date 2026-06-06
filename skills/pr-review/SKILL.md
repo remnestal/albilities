@@ -1,6 +1,6 @@
 ---
 name: pr-review
-description: Review someone else's GitHub PR with the review engine, decide each finding with you, and post one batched review of terse comments pinned to the head commit. `resume <PR>` follows up on replies to your threads. Not for your own branch (use /self-review).
+description: Review someone else's GitHub PR with the review engine, decide each finding with you, and post one batched review of terse comments pinned to the head commit. `resume <PR>` follows up on replies to your threads. Not for your own branch (use /self-review) or for replies on your own PR (use /pr-feedback).
 disable-model-invocation: true
 argument-hint: "<PR number or URL> | resume <PR>"
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/include-fragment *), Bash(${CLAUDE_PLUGIN_ROOT}/bin/backlog *), Bash(gh pr view *), Bash(gh issue view *), Bash(mktemp -d), Bash(gh pr diff *), Bash(git worktree add *), Bash(git worktree remove *), Bash(gofumpt -d *)
@@ -23,7 +23,8 @@ current directory's repo.
   anyone else's.
 - **Leave the PR branch and the user's checkout alone.** No push, no checkout
   of the PR into the user's working tree.
-- **If the user wrote the PR, stop.** Point to `/self-review`.
+- **If the user wrote the PR, stop.** Point to `/self-review` or
+  `/pr-feedback`.
 - **Plan mode:** stop before the first write, as gates/plan-mode says. A clone
   and a temp dir are writes, so in plan mode review without them: read the
   diff with `gh pr diff <N> -R <owner>/<repo>` and files at the head with
