@@ -5,7 +5,7 @@
 
 git rev-parse --git-dir >/dev/null 2>&1 || exit 0
 
-skills='/backlog /issue /self-review /pr-review /pr-feedback'
+skills='/backlog /issue /self-review /pr-review /pr-feedback /pr-finalize'
 n=$("$(dirname "$0")/backlog" count --all-branches 2>/dev/null) || n=0
 
 case $n in

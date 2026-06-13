@@ -119,7 +119,8 @@ Record the PR on the branch scope with `backlog scope set --pr <N>`
 the scope text, since `scope set` needs text when no scope exists. Report the
 PR URL.
 
-End by naming the next step: `/pr-feedback` handles review comments.
+End by naming the next steps: `/pr-feedback` handles review comments, and
+`/pr-finalize` squashes fixups and checks merge readiness.
 
 ## Reference
 

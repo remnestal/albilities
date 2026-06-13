@@ -14,7 +14,7 @@ allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/include-fragment *), Bash(${CLAUDE
   someone else's PR is `/pr-review`.
 - **Never resolve a thread.** The commenter resolves it.
 - **Never rewrite history.** No autosquash, amend, rebase or force-push.
-  Fixes land as `fixup!` commits, squashed before merge.
+  Fixes land as `fixup!` commits; `/pr-finalize` squashes them.
 - **GitHub owns thread state.** Notes add reasoning and fixup SHAs. They
   never decide whether a thread is open.
 - **Show before sending.** The user approves every commit, push and reply.
@@ -168,7 +168,8 @@ Add each reply's URL to its note.
 
 ## 7. Report
 
-Report what was answered and which threads are waiting on commenters.
+Report what was answered and which threads are waiting on commenters. Point
+to `/pr-finalize` for squashing the fixups and checking merge readiness.
 
 ## Reference
 
