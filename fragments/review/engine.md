@@ -168,6 +168,16 @@ not, and why. Name the risky areas or the uncertain findings behind it.
 Over about 2,000 changed lines, offer first to review per commit or per
 directory.
 
+**Go.** When the diff touches `.go` files, load the Go fragments yourself and
+paste each into its pass's prompt, since subagents can't read plugin files:
+
+- runtime: `${CLAUDE_PLUGIN_ROOT}/bin/include-fragment go/ctx-close`;
+- design: `${CLAUDE_PLUGIN_ROOT}/bin/include-fragment go/design`;
+- prose and tests: `${CLAUDE_PLUGIN_ROOT}/bin/include-fragment go/doc go/test`.
+
+A single pass loads all four with one call:
+`${CLAUDE_PLUGIN_ROOT}/bin/include-fragment go/ctx-close go/design go/doc go/test`.
+
 Every subagent prompt carries:
 
 - the absolute repo path and the exact diff command, with SHAs resolved;
