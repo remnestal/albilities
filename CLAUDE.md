@@ -29,8 +29,8 @@ A Claude Code plugin with skills for everyday Git and GitHub work.
   Never use `cat`: Claude Code blocks it for files outside the working
   directory, even when pre-approved. A missing fragment aborts the skill.
 - **Conditional fragments are run, not linked:** tell the model to run
-  `${CLAUDE_PLUGIN_ROOT}/bin/include-fragment <group>/<name>` when it needs
-  them. Reading a plugin file directly prompts outside plan mode.
+  `${CLAUDE_PLUGIN_ROOT}/bin/include-fragment go/design` when it needs them.
+  Reading a plugin file directly prompts outside plan mode.
 - **`bin/include-fragment` replaces `${CLAUDE_PLUGIN_ROOT}` inside
   fragments,** so a fragment can name a script by its full path. It takes
   several names, so related fragments load in one call.

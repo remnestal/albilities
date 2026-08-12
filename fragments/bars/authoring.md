@@ -77,3 +77,8 @@ them per kind of text.
 - The repro outranks brevity. Give steps, expected, actual, the exact error
   text and versions, even when that runs long.
 - Mark speculation about the cause as speculation, apart from what you observed.
+
+**Doc comment.**
+- Start with the symbol's name.
+- Say what it does or returns. Leave the algorithm to the code.
+- A language fragment such as go/doc overrides these rules where they differ.
