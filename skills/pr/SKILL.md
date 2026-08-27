@@ -8,11 +8,13 @@ allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/include-fragment *), Bash(${CLAUDE
 
 ## Gates
 
+- **Push nothing until the user says yes in step 6.**
 - **Create nothing until the commit range passes the atomicity check** or the
   user overrides it.
 - **Ship commits, not the working tree.** Uncommitted changes go through the
   `albilities:commit` skill first, or stay out of the PR.
-- **Don't add reviewers, labels, assignees or a draft flag** unless asked.
+- **Don't add reviewers, labels or assignees** unless asked. A draft is one of
+  the step 6 choices.
 - **On the default branch, stop** and ask for a branch name.
 - **Plan mode:** stop before the first write, as gates/plan-mode says.
 
@@ -93,7 +95,20 @@ Follow the PR-description delta in bars/authoring:
 Cut how the work came about and file-by-file walkthroughs. Write the body to
 `<tmp>/body.md` with the Write tool.
 
-## 6. Push
+## 6. Confirm
+
+Nothing leaves the machine before this. Put the push to the user as one
+gates/decide item, with no severity and no Problem line:
+
+- **Where:** `<base>` and the current branch.
+- **Why it matters:** the push and the PR are visible to others at once.
+- **Fix:** the title, the body and the commits that will go up.
+
+The options are **Push and open the PR** (Recommended), **Open as draft** and
+**Stop**. Apply any edits from "Other", show the result and ask again. Add
+`--draft` to `gh pr create` for a draft.
+
+## 7. Push
 
 ```bash
 git push -u origin HEAD
@@ -101,7 +116,7 @@ git push -u origin HEAD
 
 If the push is rejected, report the error and stop. Never force-push here.
 
-## 7. Create
+## 8. Create
 
 ```bash
 gh pr create --base <base> --title '<title>' --body-file <tmp>/body.md
@@ -112,7 +127,7 @@ Keep the title in single quotes. Write a `'` inside it as `'\''`.
 If `gh` fails on authentication, point to `gh auth login`. Don't build the PR
 another way.
 
-## 8. Record and report
+## 9. Record and report
 
 Record the PR on the branch scope with `backlog scope set --pr <N>`
 (plumbing/backlog). If `backlog scope` printed nothing, pass the PR title as
