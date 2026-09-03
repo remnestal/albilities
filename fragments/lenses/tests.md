@@ -1,8 +1,9 @@
 ## Tests lens
 
 Every test must earn its place by catching a bug no other test catches. The
-questions below apply to each test under review. A test that fails one is a
-finding.
+questions below apply to a test you are about to write and to a test under
+review. When writing, a test that fails one is cut or merged. When reviewing,
+the failure is the finding.
 
 ### Questions per test
 
@@ -26,8 +27,9 @@ finding.
    - *implicit*: no crash, panic, leak or hang;
    - *human*: a golden file someone actually reads.
 
-   If none applies, the test has no oracle. Report the missing oracle as a
-   finding.
+   If none applies, the test has no oracle. When writing, don't write it: ask
+   the user where the expected value comes from. When reviewing, report the
+   missing oracle as a finding.
 5. **Refactor survival.** Does it still pass after a restructure that keeps
    behaviour? Asserting on call order, private state, or mock calls no caller
    observes makes it a change-detector.
