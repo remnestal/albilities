@@ -1,5 +1,5 @@
 {
   "name": "albilities",
   "version": "0.1.0",
-  "description": "Skills for everyday Git and GitHub work."
+  "description": "Skills for the loop around a change: plan, write code and tests, commit, open the PR, review, answer feedback, merge."
 }

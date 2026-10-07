@@ -1,6 +1,7 @@
 # Working in albilities
 
-A Claude Code plugin with skills for everyday Git and GitHub work.
+A Claude Code plugin with skills for the loop around a change, from planning
+a branch to merging its PR.
 
 ## Layout
 

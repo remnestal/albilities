@@ -78,6 +78,10 @@ them per kind of text.
   text and versions, even when that runs long.
 - Mark speculation about the cause as speculation, apart from what you observed.
 
+**README.**
+- The first line says what the project is and who it is for.
+- Install steps follow, then one example that works when pasted.
+
 **Doc comment.**
 - Start with the symbol's name.
 - Say what it does or returns. Leave the algorithm to the code.

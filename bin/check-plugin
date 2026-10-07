@@ -4,7 +4,8 @@
 # It fails when a skill or fragment names a fragment that doesn't exist
 # (every name after include-fragment counts, across line breaks), when a
 # skill injects or runs include-fragment without pre-approving it, when a
-# skill calls the backlog script without pre-approving it, or when any
+# skill calls the backlog script without pre-approving it, when the skill
+# lists in README.md and bin/session-start drift from skills/, or when any
 # file contains an em dash. Run it from anywhere; it resolves the plugin
 # root itself.
 set -eu
@@ -62,7 +63,21 @@ for skill in skills/*/SKILL.md; do
 	fi
 done
 
-if grep -rln "$(printf '\342\200\224')" skills fragments rules bin hooks CLAUDE.md 2>/dev/null; then
+listed=$(sed -n "s/^skills='\(.*\)'$/\1/p" bin/session-start)
+for skill in skills/*/SKILL.md; do
+	name=$(basename "$(dirname "$skill")")
+	if grep -q '^disable-model-invocation: true' "$skill"; then
+		case " $listed " in
+		*" /$name "*) ;;
+		*) err "bin/session-start: user-only skill /$name is not listed" ;;
+		esac
+		grep -q "\`/$name\`" README.md || err "README.md: user-only skill /$name is missing"
+	else
+		grep -q "\`$name\`" README.md || err "README.md: skill $name is missing"
+	fi
+done
+
+if grep -rln "$(printf '\342\200\224')" skills fragments rules bin hooks CLAUDE.md README.md 2>/dev/null; then
 	err "em dash found in the files above"
 fi
 
