@@ -34,7 +34,7 @@ Claude reaches for these on its own when they fit:
 | Skill | Description |
 |-------|-------------|
 | [`commit`](./skills/commit) | Splits uncommitted work into atomic commits, and asks about anything unrelated: skip it, commit it separately, or keep it for later |
-| [`pr`](./skills/pr) | Opens a pull request from the branch's commits, after showing you what goes up |
+| [`pr-open`](./skills/pr-open) | Opens a pull request from the branch's commits, after showing you what goes up |
 | [`go`](./skills/go) | Go rules for design, doc comments, tests, contexts and closing |
 | [`test`](./skills/test) | Plans and writes tests from what the code must do, and cuts tests that catch no bug |
 

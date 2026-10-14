@@ -1,5 +1,5 @@
 ---
-name: pr
+name: pr-open
 description: Open a GitHub pull request from the commits on the current branch. Use when asked to open, create, raise or push up a PR, to ship the branch for review, or to put the work in front of a colleague. Not for a plain git push, questions about an existing PR, checking CI, or addressing review comments (that is /pr-feedback).
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/include-fragment *), Bash(${CLAUDE_PLUGIN_ROOT}/bin/backlog *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch --show-current), Bash(gh pr view *), Bash(gh issue view *), Bash(mktemp -d), Bash(git worktree add *), Bash(git worktree remove *), Bash(gofumpt -d *)
 ---
