@@ -1,9 +1,9 @@
 ---
 name: pr-finalize
-description: Make your own GitHub PR ready to merge. Checks unresolved threads, CI and approvals against GitHub, squashes fixup commits with a tree-identical autosquash, force-pushes with a lease after you confirm, and merges only when you confirm. Not for answering review comments (that is /pr-feedback).
+description: Make your own GitHub PR ready to merge. Checks unresolved threads, CI and approvals against GitHub, squashes fixup commits with a tree-identical autosquash, and force-pushes with a lease after you confirm. It never merges; you merge in GitHub. Not for answering review comments (that is /pr-feedback).
 disable-model-invocation: true
 argument-hint: "[PR]"
-allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/include-fragment *), Bash(${CLAUDE_PLUGIN_ROOT}/bin/backlog *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git rev-parse *), Bash(git merge-base *), Bash(git branch --show-current), Bash(gh pr view *), Bash(gh pr checks *), Bash(gh repo view *), Bash(mktemp -d)
+allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/include-fragment *), Bash(${CLAUDE_PLUGIN_ROOT}/bin/backlog *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git rev-parse *), Bash(git merge-base *), Bash(git branch --show-current), Bash(gh pr view *), Bash(gh pr checks *), Bash(mktemp -d)
 ---
 
 # Finalize your PR
@@ -15,8 +15,7 @@ allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/include-fragment *), Bash(${CLAUDE
   before deciding. Nothing is pushed after a blocking result.
 - **Never resolve a thread.** An unresolved thread passes only when the user
   overrides that specific thread.
-- **Merge only on an explicit yes** given in this run, after the final
-  status. Never pass `--admin`, and pass `--auto` only when asked.
+- **Never merge.** The skill ends at "ready to merge". You merge in GitHub.
 - **Push only a clean, tree-identical autosquash.** The rebase exited 0, no
   rebase is in progress, and `git diff --quiet <pre-sha> HEAD` exits 0.
   Otherwise abort the rebase and push nothing.
@@ -33,6 +32,8 @@ literally from here on:
 - `<pre-sha>`: `headRefOid`;
 - `<branch>`: `headRefName`;
 - `<base>`: `baseRefName`.
+
+Add `state` too. If it is `MERGED`, go straight to step 6.
 
 Then, each command in its own call:
 
@@ -181,7 +182,7 @@ After the push:
    **Re-request review** (Recommended) and **Skip**. Act per item with
    `gh pr edit <N> -R <owner>/<repo> --add-reviewer <login>`.
 
-## 5. Merge
+## 5. Ready
 
 If any required check is pending, wait first:
 
@@ -193,30 +194,13 @@ Run it as a background command and continue when it exits. In the
 foreground it needs the longest timeout, 600000 ms. A failure stops the run.
 This applies whether or not step 4 pushed.
 
-Show the final status: threads, CI, approvals, merge state, and the head
-SHA (`<new-sha>` after a push, otherwise `<pre-sha>`). Read the allowed
-methods:
+Report the final status: threads, CI, approvals, merge state, and the head
+SHA (`<new-sha>` after a push, otherwise `<pre-sha>`). End with "ready to
+merge" or with what still blocks it. Keep the notes until the PR has merged.
 
-```bash
-gh repo view <owner>/<repo> --json squashMergeAllowed,mergeCommitAllowed,rebaseMergeAllowed,viewerDefaultMergeMethod
-```
+## 6. After the merge
 
-Prefer `viewerDefaultMergeMethod` when it is allowed. Put the merge to the
-user as one gates/decide item: merge with that method, merge with another
-allowed method, or stop here. On a yes:
-
-```bash
-gh pr merge <N> -R <owner>/<repo> --<method> --match-head-commit <head-sha>
-```
-
-`--match-head-commit` refuses the merge if the head moved. Delete the branch
-only if the user asks (`--delete-branch`). If GitHub refuses the merge,
-report its reason and stop. On a no, report that the PR is ready and stop.
-
-## 6. Clean up
-
-Confirm the merge with `gh pr view <N> -R <owner>/<repo> --json state`.
-Once the state is `MERGED`, delete every note for the PR:
+When step 1 finds the PR already `MERGED`, delete its notes and stop:
 
 ```bash
 backlog note-rm <owner>/<repo>#<N>

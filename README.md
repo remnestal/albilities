@@ -1,7 +1,8 @@
 # albilities
 
 Claude Code skills for the loop around a change: plan the branch, write the
-code and tests, commit, open the PR, review, answer feedback, and merge.
+code and tests, commit, open the PR, review, answer feedback, and get it
+ready to merge.
 
 ## Usage
 
@@ -46,13 +47,13 @@ You start these yourself:
 | [`/self-review`](./skills/self-review) | Reviews your own branch, uncommitted work included; for each finding you choose to fix it now, defer it to the backlog, or skip it |
 | [`/pr-review`](./skills/pr-review) | Reviews someone else's PR and posts one batched review; `resume` handles the replies |
 | [`/pr-feedback`](./skills/pr-feedback) | Works through comments on your PR, one fixup commit per accepted fix |
-| [`/pr-finalize`](./skills/pr-finalize) | Squashes the fixups once threads and CI allow, force-pushes after asking, and merges when you confirm |
+| [`/pr-finalize`](./skills/pr-finalize) | Squashes the fixups once threads and CI allow, force-pushes after asking, and reports when the PR is ready to merge |
 | [`/issue`](./skills/issue) | Files a bug, feature or enhancement after a duplicate search |
 | [`/readme`](./skills/readme) | Writes or reviews a README |
 
 ## Design
 
-- Nothing is posted, pushed, merged or filed without asking first
+- Nothing is posted, pushed or filed without asking first, and nothing is merged
 - GitHub is the source of truth for PR state; local notes only keep the reasoning behind a terse comment
 - The backlog lives outside the repo, by default in `~/.local/state/albilities`, shared by every worktree
 - Shared rules live once, in `fragments/`, and reach each skill through `bin/include-fragment`
