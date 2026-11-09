@@ -18,7 +18,11 @@ allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/include-fragment *), Bash(git ls-f
    are the user's request, the existing README, and the repo's manifest and
    docs. The consumer is the README's reader: settle who they are, because
    the reader decides what goes in.
-3. **Every claim is checked against the repo.** A command, path, flag or
+3. **House style.** Read the repo's other docs, and any READMEs of the user's
+   other projects they point you to. House style wins on order, headings and
+   tone. Missing install steps are still a finding; a missing example is a
+   low one.
+4. **Every claim is checked against the repo.** A command, path, flag or
    version goes into the README only after you have seen it exist: on disk
    (`ls`, or `git ls-files --cached --others --exclude-standard`, which also
    lists untracked files), in the manifest, a Makefile or task file, or
@@ -26,7 +30,7 @@ allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/include-fragment *), Bash(git ls-f
    what is safe) is checked by reading the skill or script that implements
    it. A claim you can't check is left out or asked about. Run each check
    as one plain command per call, so the pre-approvals match.
-4. **Show before writing.** Present the draft or the findings and get the
+5. **Show before writing.** Present the draft or the findings and get the
    user's go-ahead before touching the file. Never commit.
 
 !`${CLAUDE_PLUGIN_ROOT}/bin/include-fragment gates/plan-mode`
@@ -37,7 +41,7 @@ allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/include-fragment *), Bash(git ls-f
 
 A README answers the reader's questions in the order they ask them:
 
-1. **What is it, and for whom?** The first line, one sentence.
+1. **What is it?** The first line, one sentence.
 2. **Why would I use it?** At most one short paragraph, only if the first line
    doesn't settle it.
 3. **How do I install it?** Prerequisites, then steps that work when pasted.
@@ -60,7 +64,7 @@ Leave out:
 1. Gather facts: `git ls-files`, the manifest, the entry points, how it is
    installed and run, and the existing docs to link to.
 2. Draft to the shape above and the authoring bar below.
-3. Check every command and path in the draft against the repo (gate 3).
+3. Check every command and path in the draft against the repo (gate 4).
 4. Show the draft, apply the user's corrections, then write the file.
 
 ## Review
@@ -73,7 +77,7 @@ Judge the README against the shape, the authoring bar and the repo:
   something the prerequisites don't name.
 - **Misplaced:** content for a different reader, duplication of another doc
   that should be a link, history or provenance.
-- **Bar:** the first line doesn't say what and for whom, or the text breaks
+- **Bar:** the first line doesn't say what the project is, or the text breaks
   a rule of the authoring bar below.
 
 Decide each finding with the user as the decision gate describes. Severity

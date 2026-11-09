@@ -79,7 +79,8 @@ them per kind of text.
 - Mark speculation about the cause as speculation, apart from what you observed.
 
 **README.**
-- The first line says what the project is and who it is for.
+- The first line says what the project is. Name the reader only when that
+  isn't obvious.
 - Install steps follow, then one example that works when pasted.
 
 **Doc comment.**
