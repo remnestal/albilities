@@ -57,6 +57,7 @@ You start these yourself:
 - GitHub is the source of truth for PR state; local notes only keep the reasoning behind a terse comment
 - The backlog lives outside the repo, by default in `~/.local/state/albilities`, shared by every worktree
 - Shared rules live once, in `fragments/`, and reach each skill through `bin/include-fragment`
+- [`DESIGN.md`](./DESIGN.md) has what each skill does, how they connect, and why
 
 ## Contributing
 

@@ -1,7 +1,8 @@
 # Working in albilities
 
 A Claude Code plugin with skills for the loop around a change, from planning
-a branch to getting its PR ready to merge.
+a branch to getting its PR ready to merge. Read `DESIGN.md` before changing
+anything.
 
 ## Layout
 
