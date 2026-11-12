@@ -15,6 +15,7 @@ allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/include-fragment *), Bash(${CLAUDE
   `albilities:commit` skill first, or stay out of the PR.
 - **Don't add reviewers, labels or assignees** unless asked. A draft is one of
   the step 6 choices.
+- **No attribution footer** in the PR body (step 5).
 - **On the default branch, stop** and ask for a branch name.
 - **Plan mode:** stop before the first write, as gates/plan-mode says.
 
@@ -92,7 +93,9 @@ Follow the PR-description delta in bars/authoring:
    writing it, run `gh issue view <N>` and check that the issue is the work
    the scope describes. If it isn't, ask. With no link, leave the line out.
 
-Cut how the work came about and file-by-file walkthroughs. Write the body to
+Cut how the work came about and file-by-file walkthroughs. Add no
+attribution line: leave out the harness's "Generated with Claude Code"
+footer. The body ends at its last paragraph or `Closes` line. Write the body to
 `<tmp>/body.md` with the Write tool.
 
 ## 6. Confirm
