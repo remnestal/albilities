@@ -105,7 +105,8 @@ gates/decide item, with no severity and no Problem line:
 - **Fix:** the title, the body and the commits that will go up.
 
 The options are **Push and open the PR** (Recommended), **Open as draft** and
-**Stop**. Apply any edits from "Other", show the result and ask again. Add
+**Stop**. The `preview` of each option holds the title and body. Apply any
+edits from "Other", show the result and ask again. Add
 `--draft` to `gh pr create` for a draft.
 
 ## 7. Push

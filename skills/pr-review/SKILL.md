@@ -100,7 +100,8 @@ Write the review to `<tmp>/review.json`:
   Keep the body to those findings. No summary of the PR. Praise, if any, is
   one separate line.
 
-Show the whole batch and ask: **Post**, **Cancel**, or "Other" to edit.
+Show the whole batch and ask: **Post**, **Cancel**, or "Other" to edit. The
+batch goes in the `preview` of both options, as gates/decide says.
 
 ### 7. Post
 
@@ -165,7 +166,8 @@ author disagrees, is the author right?
 
 Draft a reply to the same review-comment rules. Decide each thread alone, as
 the decision gate describes:
-**Reply**, **Reply and resolve**, **Resolve**, **Skip**. Offer resolve only
+**Reply**, **Reply and resolve**, **Resolve**, **Skip**, with the draft reply
+as the preview. Offer resolve only
 when the finding is fixed or the user accepts the author's reasoning, and
 only when the thread's `viewerCanResolve` is true.
 

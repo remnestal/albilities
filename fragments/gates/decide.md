@@ -30,6 +30,10 @@ and their severities.
   Don't repeat the explanation in it.
 - The options come from the skill. Put the recommended one first and mark it
   "(Recommended)". Each option's description says only what choosing it does.
+- When the answer approves a literal draft (a commit message, PR title and
+  body, issue, reply, diff or README), put the whole draft in the `preview`
+  of every option. Text shown before the prompt can be hidden behind the
+  question, so the preview is what the user judges.
 - Never put two items in one call.
 
 **3. Act, then move on.** If the skill acts per item, act before the next;

@@ -65,7 +65,9 @@ Leave out:
    installed and run, and the existing docs to link to.
 2. Draft to the shape above and the authoring bar below.
 3. Check every command and path in the draft against the repo (gate 4).
-4. Show the draft, apply the user's corrections, then write the file.
+4. Show the draft and ask for approval with the whole draft as the preview,
+   as the decision gate says. Apply the user's corrections, then write the
+   file.
 
 ## Review
 

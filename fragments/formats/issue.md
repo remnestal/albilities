@@ -97,8 +97,9 @@ proposal can still act on the problem.
 ## Creating it
 
 Show the title, labels and full body as they will be posted. Ask with
-AskUserQuestion: **Create**, **Edit** or **Cancel**. On Edit, apply the changes
-and show the draft again.
+AskUserQuestion: **Create**, **Edit** or **Cancel**. Put the title, labels and
+body in the `preview` of every option, so the draft stays visible while the
+user chooses. On Edit, apply the changes and show the draft again.
 
 On Create, write the body to `<tmp>/issue.md`, where `<tmp>` is the workflow's
 `mktemp -d` directory (run `mktemp -d` once if there is none). Then:

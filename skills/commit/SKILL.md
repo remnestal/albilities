@@ -194,6 +194,8 @@ harness's attribution line, used exactly. Add none otherwise.
 
 Show the whole message, subject and body, in a fenced block. Ask "Commit 2/3
 with this message?" with `AskUserQuestion`: Commit (Recommended) or Edit.
+Put the whole message in the `preview` of both options, so it stays visible
+while the user chooses.
 After a yes:
 
 ```

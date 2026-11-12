@@ -102,6 +102,8 @@ holds only that item's hunks.
    - **Skip:** no change and no reply. Leave out step 5, and save the note
      in state `skipped` with the reason.
 5. **Draft the reply** (section 5) and get the user's yes on its wording.
+   Each yes in steps 4 and 5 is asked with the diff or reply as the
+   question's preview, as gates/decide says.
 6. **Save the note** at once, so the work survives an interruption:
    `backlog note-set <owner>/<repo>#<N> <id> '<body>'`, as plumbing/backlog
    describes. The body holds the state (`clarified`, `accepted`, `countered`
@@ -148,7 +150,8 @@ no recap:
 ## 6. Push and post
 
 After the last item, show `git log --oneline origin/<headRefName>..HEAD` and
-the approved replies, and ask once to push and post. Post only after the
+the approved replies, and ask once to push and post, with both as the
+question's preview. Post only after the
 push, so every SHA a reply names exists on GitHub.
 
 ```bash
